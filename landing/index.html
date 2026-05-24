@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tray MCP — Controle sua loja Tray pelo Claude</title>
+<meta name="description" content="Servidor MCP gratuito que conecta Claude a qualquer loja Tray Commerce. Gerencie produtos, pedidos, páginas e mais direto no chat.">
+<style>
+  :root {
+    --tray: #FF7900;
+    --tray-dark: #E56D00;
+    --tray-light: #FFF4EB;
+    --ink: #1A1A1A;
+    --ink-2: #3D3D3D;
+    --muted: #6B6B6B;
+    --line: #E8E8E8;
+    --bg: #FAFAFA;
+    --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #FFFFFF 0%, var(--tray-light) 100%);
+    padding: 80px 0 96px;
+    border-bottom: 1px solid var(--line);
+  }
+  .badge {
+    display: inline-block;
+    background: var(--tray);
+    color: #FFF;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-bottom: 24px;
+  }
+  h1 {
+    font-size: clamp(34px, 5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    color: var(--ink);
+  }
+  h1 .accent { color: var(--tray); }
+  .subhead {
+    font-size: clamp(17px, 2vw, 20px);
+    color: var(--ink-2);
+    max-width: 720px;
+    margin-bottom: 36px;
+  }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 16px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-primary {
+    background: var(--tray);
+    color: #FFF;
+    box-shadow: 0 4px 14px rgba(255, 121, 0, 0.3);
+  }
+  .btn-primary:hover { background: var(--tray-dark); transform: translateY(-1px); }
+  .btn-secondary {
+    background: #FFF;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn-secondary:hover { border-color: var(--tray); color: var(--tray); }
+
+  /* Sections */
+  section { padding: 80px 0; }
+  section.alt { background: #FFF; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  h2 {
+    font-size: clamp(28px, 3.5vw, 36px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 16px;
+    color: var(--ink);
+  }
+  .section-sub {
+    color: var(--muted);
+    font-size: 17px;
+    margin-bottom: 48px;
+    max-width: 640px;
+  }
+
+  /* How it works */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+  }
+  .step {
+    background: var(--card);
+    padding: 28px 24px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .step:hover { border-color: var(--tray); transform: translateY(-2px); }
+  .step-icon {
+    font-size: 32px;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .step-num {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--tray);
+    background: var(--tray-light);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .step p { font-size: 14px; color: var(--muted); }
+
+  /* What you can do */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .feature {
+    background: var(--card);
+    padding: 20px 22px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .feature-check {
+    color: var(--tray);
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+    line-height: 1.5;
+  }
+  .feature-text { font-size: 15px; color: var(--ink-2); }
+  .feature.highlight {
+    background: var(--tray-light);
+    border-color: var(--tray);
+  }
+  .feature.highlight .feature-text { color: var(--ink); font-weight: 500; }
+
+  /* Connect snippets */
+  .connect-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+  .snippet-card {
+    background: var(--card);
+    padding: 28px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+  }
+  .snippet-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .snippet-card p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  pre {
+    background: #1A1A1A;
+    color: #F1F1F1;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Menlo, monospace;
+    line-height: 1.5;
+  }
+  pre .key { color: #FF9A4D; }
+  pre .val { color: #A5D6A7; }
+  pre .comment { color: #888; }
+  ol.fields {
+    list-style: none;
+    counter-reset: f;
+    margin-bottom: 16px;
+  }
+  ol.fields li {
+    counter-increment: f;
+    font-size: 14px;
+    color: var(--ink-2);
+    padding: 6px 0;
+    padding-left: 28px;
+    position: relative;
+  }
+  ol.fields li::before {
+    content: counter(f);
+    position: absolute;
+    left: 0;
+    top: 6px;
+    background: var(--tray-light);
+    color: var(--tray);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  code.inline {
+    background: var(--tray-light);
+    color: var(--tray-dark);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: "SF Mono", Monaco, monospace;
+  }
+
+  /* Footer */
+  footer {
+    background: var(--ink);
+    color: #BDBDBD;
+    padding: 48px 0 32px;
+    text-align: center;
+  }
+  footer .footer-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #333;
+  }
+  footer .brand {
+    color: #FFF;
+    font-weight: 700;
+    font-size: 18px;
+  }
+  footer .brand .accent { color: var(--tray); }
+  footer a {
+    color: #BDBDBD;
+    text-decoration: none;
+    font-size: 14px;
+    margin: 0 12px;
+    transition: color 0.15s;
+  }
+  footer a:hover { color: var(--tray); }
+  footer .free-tag {
+    display: inline-block;
+    background: rgba(255, 121, 0, 0.15);
+    color: var(--tray);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  footer .privacy {
+    font-size: 12px;
+    color: #888;
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 56px 0 64px; }
+    section { padding: 56px 0; }
+    .cta-row { flex-direction: column; align-items: stretch; }
+    .btn { text-align: center; }
+    footer .footer-grid { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <span class="badge">GRATUITO · MCP SERVER</span>
+    <h1>Tray MCP — Controle sua loja Tray pelo <span class="accent">Claude</span></h1>
+    <p class="subhead">Servidor MCP gratuito. Instale o app na sua loja Tray e conecte qualquer Claude (Web, Desktop, Code) pra gerenciar produtos, pedidos, categorias, páginas e mais — direto no chat.</p>
+    <div class="cta-row">
+      <a href="#instalar" class="btn btn-primary">Instalar na Loja Tray</a>
+      <a href="#conectar" class="btn btn-secondary">Conectar no Claude</a>
+    </div>
+  </div>
+</header>
+
+<section id="instalar">
+  <div class="container">
+    <h2>Como funciona</h2>
+    <p class="section-sub">Quatro passos. Sem código, sem configuração de servidor. Funciona em minutos.</p>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <span class="step-icon">🛒</span>
+        <h3>Instale o app</h3>
+        <p>Encontre o Tray MCP na Loja de Aplicativos Tray e adicione à sua loja.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span class="step-icon">🔐</span>
+        <h3>Autorize</h3>
+        <p>Conexão via OAuth oficial Tray. Suas credenciais ficam seguras.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span class="step-icon">📋</span>
+        <h3>Copie URL e token</h3>
+        <p>Receba a URL MCP e o token de acesso direto no painel.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">4</span>
+        <span class="step-icon">⚡</span>
+        <h3>Conecte no Claude</h3>
+        <p>Cole em claude.ai → Settings → Connectors e pronto. Já pode conversar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="container">
+    <h2>O que você pode fazer</h2>
+    <p class="section-sub">Mais de 150 ações cobrindo praticamente toda a API Tray Commerce. Tudo via linguagem natural.</p>
+    <div class="features">
+      <div class="feature highlight">
+        <span class="feature-check">✦</span>
+        <span class="feature-text">"Adicione um FAQ accordion com texto SEO na página de categoria Camisetas"</span>
+      </div>
+      <div class="feature">
+        <span class="feature-check">✓</span>
+        <span class="feature-text">Gerenciar produtos, variações e estoque</span>
+      </div>
+      <div class="feature">
+        <span class="feature-check">✓</span>
+        <span class="feature-text">Consultar e atualizar pedidos</span>
+      </div>
+      <div class="feature">
+        <span class="feature-check">✓</span>
+        <span class="feature-text">Criar páginas institucionais com HTML</span>
+      </div>
+      <div class="feature">
+        <span class="feature-check">✓</span>
+        <span class="feature-text">Cadastrar cupons, marcas e kits</span>
+      </div>
+      <div class="feature">
+        <span class="feature-check">✓</span>
+        <span class="feature-text">Organizar categorias e taxonomias</span>
+      </div>
+      <div class="feature">
+        <span class="feature-check">✓</span>
+        <span class="feature-text">150+ ações cobrindo toda a API Tray</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="conectar">
+  <div class="container">
+    <h2>Conectar no Claude</h2>
+    <p class="section-sub">Depois de instalar o app na Tray, você terá uma URL MCP e um token. Use eles nos clientes Claude:</p>
+    <div class="connect-grid">
+      <div class="snippet-card">
+        <h3>claude.ai (Web)</h3>
+        <p>Settings → Profile → Connectors → Add custom connector</p>
+        <ol class="fields">
+          <li>Name: <code class="inline">Tray</code></li>
+          <li>URL: <code class="inline">https://tray-mcp.workers.dev/mcp</code></li>
+          <li>Auth: <code class="inline">Bearer &lt;seu_token&gt;</code></li>
+        </ol>
+      </div>
+      <div class="snippet-card">
+        <h3>Claude Code (CLI)</h3>
+        <p>Rode no terminal, dentro do seu projeto:</p>
+<pre><span class="comment"># adicione o servidor MCP</span>
+claude mcp add tray \
+  --transport http \
+  --url https://tray-mcp.workers.dev/mcp \
+  --header <span class="val">"Authorization: Bearer &lt;seu_token&gt;"</span></pre>
+      </div>
+      <div class="snippet-card">
+        <h3>Claude Desktop</h3>
+        <p>Edite <code class="inline">claude_desktop_config.json</code>:</p>
+<pre>{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"tray"</span>: {
+      <span class="key">"url"</span>: <span class="val">"https://tray-mcp.workers.dev/mcp"</span>,
+      <span class="key">"headers"</span>: {
+        <span class="key">"Authorization"</span>: <span class="val">"Bearer &lt;seu_token&gt;"</span>
+      }
+    }
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="brand">Tray<span class="accent">MCP</span></div>
+      <div>
+        <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+        <a href="#instalar">Instalar</a>
+        <a href="#conectar">Conectar</a>
+      </div>
+      <span class="free-tag">Gratuito, sempre</span>
+    </div>
+    <p class="privacy">Projeto open-source. Não armazenamos dados da sua loja: o servidor apenas intermedeia chamadas entre o Claude e a API oficial Tray Commerce, respeitando os escopos OAuth autorizados. Em conformidade com a LGPD.</p>
+  </div>
+</footer>
+
+</body>
+</html>
