@@ -136,4 +136,4 @@ Wrangler prints the public URL (e.g. `https://tray-mcp.<account>.workers.dev`). 
 
 ## License
 
-Proprietary — all rights reserved.
+[PolyForm Noncommercial License 1.0.0](./LICENSE.md) — free for personal, hobby, research, educational, charitable, and government use. **Commercial use is not permitted.** See the full text in `LICENSE.md`.

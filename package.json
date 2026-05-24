@@ -2,6 +2,7 @@
   "name": "tray-mcp",
   "version": "0.1.0",
   "description": "Tray Commerce MCP server running on Cloudflare Workers",
+  "license": "SEE LICENSE IN LICENSE.md",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
