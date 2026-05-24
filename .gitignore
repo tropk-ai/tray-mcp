@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+dist
+.wrangler
+coverage
+*.log
+.DS_Store
+.idea
+.vscode

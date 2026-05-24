@@ -1,0 +1,21 @@
+name = "tray-mcp"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Workers observability
+[observability]
+enabled = true
+
+# Public environment variables.
+# Secrets (DATABASE_URL, TRAY_CONSUMER_SECRET) should be uploaded with
+# `wrangler secret put <NAME>` and not committed here.
+[vars]
+DATABASE_URL = ""
+TRAY_CONSUMER_KEY = ""
+TRAY_CONSUMER_SECRET = ""
+MCP_HOST = "https://tray-mcp.workers.dev"
+
+# Example of a production environment override.
+# [env.production.vars]
+# MCP_HOST = "https://tray-mcp.example.com"

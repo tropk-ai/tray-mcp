@@ -1,0 +1,12 @@
+# Copy to .dev.vars and fill in real values for local development.
+# `wrangler dev` automatically loads .dev.vars as environment variables.
+
+# Postgres connection string (Supabase pooler URL recommended for Workers).
+DATABASE_URL="postgresql://postgres:password@db.xxxxx.supabase.co:6543/postgres?sslmode=require"
+
+# Credentials obtained from the Tray partner panel for your app.
+TRAY_CONSUMER_KEY="your-tray-consumer-key"
+TRAY_CONSUMER_SECRET="your-tray-consumer-secret"
+
+# Public base URL where this Worker is reachable (no trailing slash).
+MCP_HOST="https://tray-mcp.workers.dev"
