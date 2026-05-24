@@ -123,6 +123,72 @@ export const webhookEvents = pgTable(
   }),
 );
 
+/**
+ * OAuth 2.1 Dynamic Client Registration (RFC 7591) — one row per MCP
+ * client (e.g. claude.ai) that has registered with our authorization
+ * server. Public clients (no secret) use PKCE; confidential clients can
+ * authenticate with `client_secret_hash`.
+ */
+export const oauthClients = pgTable(
+  "oauth_clients",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    clientId: text("client_id").notNull(),
+    clientSecretHash: text("client_secret_hash"),
+    clientName: text("client_name"),
+    redirectUris: jsonb("redirect_uris").notNull(),
+    grantTypes: jsonb("grant_types").notNull(),
+    tokenEndpointAuthMethod: text("token_endpoint_auth_method")
+      .notNull()
+      .default("none"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    clientIdUnique: uniqueIndex("oauth_clients_client_id_unique").on(
+      table.clientId,
+    ),
+  }),
+);
+
+/**
+ * Short-lived state for an in-flight /authorize → /token round-trip.
+ * Stores the OAuth client's PKCE challenge + redirect target, and is
+ * later updated with the `mcp_code` and `store_id` once the merchant
+ * finishes installing on Tray.
+ */
+export const oauthPending = pgTable(
+  "oauth_pending",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    clientId: text("client_id").notNull(),
+    redirectUri: text("redirect_uri").notNull(),
+    state: text("state").notNull(),
+    codeChallenge: text("code_challenge").notNull(),
+    codeChallengeMethod: text("code_challenge_method").notNull(),
+    scope: text("scope"),
+    mcpCode: text("mcp_code"),
+    storeId: uuid("store_id").references(() => stores.id, {
+      onDelete: "set null",
+    }),
+    trayStore: text("tray_store"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  },
+  (table) => ({
+    clientIdIdx: index("oauth_pending_client_id_idx").on(table.clientId),
+    mcpCodeIdx: index("oauth_pending_mcp_code_idx").on(table.mcpCode),
+  }),
+);
+
 export type Store = typeof stores.$inferSelect;
 export type NewStore = typeof stores.$inferInsert;
 export type OAuthToken = typeof oauthTokens.$inferSelect;
@@ -131,3 +197,7 @@ export type McpSession = typeof mcpSessions.$inferSelect;
 export type NewMcpSession = typeof mcpSessions.$inferInsert;
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
+export type OAuthClient = typeof oauthClients.$inferSelect;
+export type NewOAuthClient = typeof oauthClients.$inferInsert;
+export type OAuthPending = typeof oauthPending.$inferSelect;
+export type NewOAuthPending = typeof oauthPending.$inferInsert;

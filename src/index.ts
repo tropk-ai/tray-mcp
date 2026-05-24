@@ -6,6 +6,15 @@ import { mcpGet, mcpPost } from "./mcp/transport.js";
 import { callbackHandler } from "./oauth/callback.js";
 import { installHandler } from "./oauth/install.js";
 import { successHandler } from "./oauth/success.js";
+import { authorizeHandler } from "./oauth-provider/authorize.js";
+import {
+  authorizationServerMetadata,
+  protectedResourceMetadata,
+} from "./oauth-provider/metadata.js";
+import { registerHandler } from "./oauth-provider/register.js";
+import { storeSelectedHandler } from "./oauth-provider/store-selected.js";
+import { tokenHandler } from "./oauth-provider/token.js";
+import { trayCallbackHandler } from "./oauth-provider/tray-callback.js";
 import { makeWebhookHandler } from "./webhooks/receiver.js";
 
 export type Bindings = {
@@ -27,15 +36,20 @@ app.get("/", (c) =>
   }),
 );
 
+// ---------------------------------------------------------------------------
+// Legacy Tray-marketplace install flow (manual bearer copy/paste). Still
+// supported alongside the new OAuth-provider flow below.
+// ---------------------------------------------------------------------------
+
 /**
- * Step 1 of the Tray OAuth install flow. The merchant lands here from
- * the Tray app store and is redirected to Tray's authorize URL.
+ * Step 1 of the legacy Tray OAuth install flow. The merchant lands here
+ * from the Tray app store and is redirected to Tray's authorize URL.
  */
 app.get("/oauth/install", installHandler);
 
 /**
- * Step 2 of the Tray OAuth install flow. Tray redirects here with a
- * short-lived `code`; the handler exchanges it for tokens, persists
+ * Step 2 of the legacy Tray OAuth install flow. Tray redirects here with
+ * a short-lived `code`; the handler exchanges it for tokens, persists
  * them, mints an MCP bearer and redirects to `/install-success`.
  */
 app.get("/oauth/callback", callbackHandler);
@@ -47,12 +61,84 @@ app.get("/oauth/callback", callbackHandler);
  */
 app.get("/install-success", successHandler);
 
+// ---------------------------------------------------------------------------
+// OAuth 2.1 provider — lets MCP clients (claude.ai) connect in one click
+// without the merchant copy/pasting a bearer. See `src/oauth-provider/`.
+// ---------------------------------------------------------------------------
+
+/**
+ * RFC 9728 — tells the MCP client which authorization server can issue
+ * tokens for this resource.
+ */
+app.get("/.well-known/oauth-protected-resource", protectedResourceMetadata);
+
+/**
+ * RFC 8414 — advertises this OAuth 2.1 authorization server's endpoints
+ * and capabilities (PKCE S256, DCR, etc).
+ */
+app.get(
+  "/.well-known/oauth-authorization-server",
+  authorizationServerMetadata,
+);
+
+/**
+ * RFC 7591 — Dynamic Client Registration. claude.ai POSTs its
+ * redirect_uri here and receives a fresh `client_id`.
+ */
+app.post("/register", registerHandler());
+
+/**
+ * GET /authorize — start of the authorization code flow. Persists a
+ * pending row keyed on a fresh UUID and either renders a store-picker
+ * form or (if `?store=` is provided) jumps straight to Tray's /auth.php.
+ */
+app.get("/authorize", authorizeHandler());
+
+/**
+ * POST /authorize/store-selected — the merchant submitted the store
+ * picker form; redirect them to Tray's /auth.php.
+ */
+app.post("/authorize/store-selected", storeSelectedHandler());
+
+/**
+ * GET /oauth/tray-callback — Tray redirects here after the merchant
+ * authorizes the app. We exchange the Tray code for tokens, mint an
+ * `mcp_code`, and redirect back to the OAuth client's redirect_uri.
+ */
+app.get("/oauth/tray-callback", trayCallbackHandler());
+
+/**
+ * POST /token — final step. Validates PKCE on `authorization_code`
+ * grants and rotates `refresh_token` grants. Issues an MCP bearer
+ * usable by `authMcp`.
+ */
+app.post("/token", tokenHandler());
+
+// ---------------------------------------------------------------------------
+// MCP transport — protected by bearer token.
+// ---------------------------------------------------------------------------
+
 /**
  * Streamable HTTP MCP transport endpoint. Authenticated via a bearer
- * token tied to a store.
+ * token tied to a store. On 401 we emit a `WWW-Authenticate: Bearer
+ * resource_metadata=...` header so spec-compliant MCP clients can
+ * discover our OAuth provider and start the auth flow automatically.
  */
-app.post("/mcp", authMcp(), mcpPost);
-app.get("/mcp", authMcp(), mcpGet);
+function withWwwAuthenticate() {
+  return async (c: import("hono").Context<{ Bindings: Bindings }>, next: () => Promise<void>) => {
+    await next();
+    if (c.res.status === 401) {
+      const host = c.env.MCP_HOST.replace(/\/$/, "");
+      const challenge =
+        `Bearer realm="MCP", ` +
+        `resource_metadata="${host}/.well-known/oauth-protected-resource"`;
+      c.res.headers.set("WWW-Authenticate", challenge);
+    }
+  };
+}
+
+app.post("/mcp", withWwwAuthenticate(), authMcp(), mcpPost);
+app.get("/mcp", withWwwAuthenticate(), authMcp(), mcpGet);
 
 /**
  * Tray webhook receiver. The `:store_id` path param identifies the tenant.

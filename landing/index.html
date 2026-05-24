@@ -307,15 +307,23 @@
 
 <header>
   <div class="container">
-    <span class="badge">GRATUITO · MCP SERVER</span>
+    <span class="badge">GRATUITO · MCP SERVER · OAUTH 2.1</span>
     <h1>Tray MCP — Controle sua loja Tray pelo <span class="accent">Claude</span></h1>
-    <p class="subhead">Servidor MCP gratuito. Instale o app na sua loja Tray e conecte qualquer Claude (Web, Desktop, Code) pra gerenciar produtos, pedidos, categorias, páginas e mais — direto no chat.</p>
+    <p class="subhead">Servidor MCP gratuito com login 1-click. Cole a URL no claude.ai, autorize sua loja Tray e pronto — sem copiar token, sem configurar nada.</p>
     <div class="cta-row">
-      <a href="#instalar" class="btn btn-primary">Instalar na Loja Tray</a>
-      <a href="#conectar" class="btn btn-secondary">Conectar no Claude</a>
+      <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener" class="btn btn-primary">Adicionar ao Claude</a>
+      <a href="#conectar" class="btn btn-secondary">Como conectar</a>
     </div>
   </div>
 </header>
+
+<section id="oneclick" style="background:#FFFAF3;border-bottom:1px solid var(--line);padding:48px 0">
+  <div class="container">
+    <h2 style="margin-bottom:8px">⚡ Conexão 1-click</h2>
+    <p class="section-sub" style="margin-bottom:20px">Basta colar a URL abaixo em <strong>claude.ai → Settings → Connectors → Add custom connector</strong>. O Claude vai abrir a tela de autorização da Tray automaticamente — sem precisar gerar token manual.</p>
+    <pre style="background:#FFFFFF;border:1px solid var(--line);padding:14px 18px;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:15px;color:var(--ink);overflow-x:auto;margin:0">https://tray-mcp.workers.dev/mcp</pre>
+  </div>
+</section>
 
 <section id="instalar">
   <div class="container">

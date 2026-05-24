@@ -115,8 +115,28 @@ Wrangler prints the public URL (e.g. `https://tray-mcp.<account>.workers.dev`). 
 
 ## Connecting from claude.ai
 
+Two flows are supported:
+
+### (A) 1-click OAuth (recommended)
+
 1. In Claude → **Settings → Connectors → Add custom connector**.
-2. Choose **MCP server** and fill in:
+2. Paste just the URL — `https://<your-mcp-host>/mcp` — and leave Auth blank.
+3. Claude discovers the OAuth metadata, registers itself dynamically (RFC 7591), and pops up a Tray authorization screen.
+4. Enter your Tray store domain → confirm permissions → done. No bearer to copy.
+
+Behind the scenes this uses spec MCP 2025-03-26 with OAuth 2.1 + PKCE:
+
+- `GET /.well-known/oauth-protected-resource` (RFC 9728)
+- `GET /.well-known/oauth-authorization-server` (RFC 8414)
+- `POST /register` (RFC 7591 Dynamic Client Registration)
+- `GET /authorize` → store-picker → Tray `/auth.php`
+- `GET /oauth/tray-callback` mints an `mcp_code`, redirects back to claude.ai
+- `POST /token` validates PKCE and issues an MCP bearer
+
+### (B) Bearer token (legacy)
+
+1. Install the app from the Tray marketplace; copy the bearer token shown on `/install-success`.
+2. In Claude → **Settings → Connectors → Add custom connector**, fill in:
    - **URL**: `https://<your-mcp-host>/mcp`
    - **Auth**: `Bearer <token-from-install-success>`
 3. Save. Claude will discover the Tray tools and you can start asking things like _"list my last 10 orders"_ or _"set stock of SKU ABC to 50"_.

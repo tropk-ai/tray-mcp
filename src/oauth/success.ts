@@ -184,6 +184,20 @@ export async function successHandler(
 </head>
 <body>
   <div class="container">
+    <div class="card" style="border-left:4px solid #FF7900;background:#FFFAF3">
+      <h2 style="margin-bottom:0.5rem">⚡ Conexão 1-click no Claude (recomendado)</h2>
+      <p>
+        Em vez de copiar/colar o bearer manual, basta colar a URL do MCP no
+        <strong>claude.ai → Settings → Connectors → Add custom connector</strong>.
+        O Claude pede autorização automaticamente — sem token.
+      </p>
+      <label>URL do MCP (1-click)</label>
+      <div class="row">
+        <input id="url-oneclick" readonly value="${escapeHtml(mcpUrl)}">
+        <button type="button" data-copy="url-oneclick">Copiar</button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="ok">✅ App instalado com sucesso</div>
       <h1>Seu servidor MCP está pronto</h1>

@@ -74,3 +74,49 @@ CREATE INDEX IF NOT EXISTS "webhook_events_store_id_idx"
 
 CREATE INDEX IF NOT EXISTS "webhook_events_received_at_idx"
     ON "webhook_events" ("received_at");
+
+-- ---------------------------------------------------------------------------
+-- oauth_clients: MCP clients registered via Dynamic Client Registration
+-- (RFC 7591). claude.ai registers itself here as a public client (no
+-- secret) and uses PKCE on the /authorize + /token round-trip.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS "oauth_clients" (
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    "client_id" text NOT NULL,
+    "client_secret_hash" text,
+    "client_name" text,
+    "redirect_uris" jsonb NOT NULL,
+    "grant_types" jsonb NOT NULL,
+    "token_endpoint_auth_method" text NOT NULL DEFAULT 'none',
+    "created_at" timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "oauth_clients_client_id_unique"
+    ON "oauth_clients" ("client_id");
+
+-- ---------------------------------------------------------------------------
+-- oauth_pending: short-lived state for an in-flight /authorize → /token
+-- round-trip. Holds the OAuth client's PKCE challenge and the chosen
+-- merchant store, then is consumed at /token to mint an MCP bearer.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS "oauth_pending" (
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    "client_id" text NOT NULL,
+    "redirect_uri" text NOT NULL,
+    "state" text NOT NULL,
+    "code_challenge" text NOT NULL,
+    "code_challenge_method" text NOT NULL,
+    "scope" text,
+    "mcp_code" text,
+    "store_id" uuid REFERENCES "stores"("id") ON DELETE SET NULL,
+    "tray_store" text,
+    "created_at" timestamptz NOT NULL DEFAULT now(),
+    "expires_at" timestamptz NOT NULL,
+    "consumed_at" timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS "oauth_pending_client_id_idx"
+    ON "oauth_pending" ("client_id");
+
+CREATE INDEX IF NOT EXISTS "oauth_pending_mcp_code_idx"
+    ON "oauth_pending" ("mcp_code");
