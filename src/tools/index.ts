@@ -36,6 +36,8 @@ import { tools as area_31 } from './usuarios.js';
 import { tools as area_32 } from './variacoes.js';
 import { tools as area_33 } from './visao-geral.js';
 import { tools as area_34 } from './webhooks.js';
+// Hand-written extras (not auto-generated)
+import { tools as seoAccordionTools } from './seo-accordion.js';
 
 export const allTools = [
   ...area_0,
@@ -73,4 +75,5 @@ export const allTools = [
   ...area_32,
   ...area_33,
   ...area_34,
+  ...seoAccordionTools,
 ];

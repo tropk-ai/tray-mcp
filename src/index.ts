@@ -1,5 +1,11 @@
 import { Hono } from "hono";
 
+import { createDb } from "./lib/db.js";
+import { callbackHandler } from "./oauth/callback.js";
+import { installHandler } from "./oauth/install.js";
+import { successHandler } from "./oauth/success.js";
+import { makeWebhookHandler } from "./webhooks/receiver.js";
+
 export type Bindings = {
   DATABASE_URL: string;
   TRAY_CONSUMER_KEY: string;
@@ -83,19 +89,16 @@ app.post("/mcp", (c) =>
 );
 
 /**
- * Tray webhook receiver. The store_id path param identifies the tenant.
+ * Tray webhook receiver. The `:store_id` path param identifies the tenant.
+ * It accepts either our internal `stores.id` UUID (preferred — that's the
+ * URL we register with Tray) or, as a fallback, the `tray_store_id`.
  *
- * Implemented by the webhooks agent.
+ * Tray gives us a 1-second budget to respond; the handler returns 200
+ * immediately and defers the DB insert via `executionCtx.waitUntil()`.
  */
-app.post("/webhook/:store_id", (c) =>
-  c.json(
-    {
-      error: "not_implemented",
-      message: "POST /webhook/:store_id is not implemented yet.",
-      store_id: c.req.param("store_id"),
-    },
-    501,
-  ),
+app.post(
+  "/webhook/:store_id",
+  makeWebhookHandler((env) => createDb((env as Bindings).DATABASE_URL)),
 );
 
 export default app;
