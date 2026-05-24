@@ -128,3 +128,23 @@ export async function getValidAccessToken(
   });
   return refreshed.accessToken;
 }
+
+/**
+ * Adapter used by the MCP transport layer. Unconditionally refreshes
+ * (the caller has already decided the current token is unusable) and
+ * returns just the new access token string.
+ *
+ * The `refreshToken` argument is accepted for API compatibility but the
+ * canonical value is read from the DB inside `refreshTokens`.
+ */
+export async function refreshAccessToken(params: {
+  storeId: string;
+  refreshToken: string;
+  db: Database;
+  // The MCP code passes its Bindings here so a per-env fetch can be
+  // injected in the future; we accept and ignore for now.
+  env?: unknown;
+}): Promise<string> {
+  const refreshed = await refreshTokens(params.db, params.storeId);
+  return refreshed.accessToken;
+}

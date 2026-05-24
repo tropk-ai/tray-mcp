@@ -128,7 +128,7 @@ export async function insertWebhookEvent(
  */
 export function makeWebhookHandler(getDb: (env: unknown) => Database) {
   return async (c: Context) => {
-    const storeIdParam = c.req.param("store_id");
+    const storeIdParam = c.req.param("store_id") ?? "";
     let body: unknown = null;
     try {
       body = await c.req.json();
@@ -142,13 +142,26 @@ export function makeWebhookHandler(getDb: (env: unknown) => Database) {
     const db = getDb(c.env);
     const work = insertWebhookEvent(db, storeIdParam, body);
 
-    const ctx = (c as unknown as {
-      executionCtx?: { waitUntil?: (p: Promise<unknown>) => void };
-    }).executionCtx;
-    if (ctx && typeof ctx.waitUntil === "function") {
-      ctx.waitUntil(work);
+    // Hono's `c.executionCtx` getter throws when no ExecutionContext was
+    // attached to the request (i.e. when not running on Workers). We treat
+    // that as "no waitUntil available" and fall back to awaiting inline.
+    let waitUntil:
+      | ((p: Promise<unknown>) => void)
+      | null = null;
+    try {
+      const ec = c.executionCtx as
+        | { waitUntil?: (p: Promise<unknown>) => void }
+        | undefined;
+      if (ec && typeof ec.waitUntil === "function") {
+        waitUntil = ec.waitUntil.bind(ec);
+      }
+    } catch {
+      waitUntil = null;
+    }
+
+    if (waitUntil) {
+      waitUntil(work);
     } else {
-      // Fallback for non-Workers runtimes (Node tests, etc.).
       await work;
     }
 

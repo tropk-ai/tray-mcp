@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 
 import { createDb } from "./lib/db.js";
+import { authMcp } from "./mcp/auth.js";
+import { mcpGet, mcpPost } from "./mcp/transport.js";
 import { callbackHandler } from "./oauth/callback.js";
 import { installHandler } from "./oauth/install.js";
 import { successHandler } from "./oauth/success.js";
@@ -28,65 +30,29 @@ app.get("/", (c) =>
 /**
  * Step 1 of the Tray OAuth install flow. The merchant lands here from
  * the Tray app store and is redirected to Tray's authorize URL.
- *
- * Implemented by the OAuth agent.
  */
-app.get("/oauth/install", (c) =>
-  c.json(
-    {
-      error: "not_implemented",
-      message: "GET /oauth/install is not implemented yet.",
-    },
-    501,
-  ),
-);
+app.get("/oauth/install", installHandler);
 
 /**
  * Step 2 of the Tray OAuth install flow. Tray redirects here with a
- * short-lived `code`; the handler must exchange it for tokens and
- * persist them.
- *
- * Implemented by the OAuth agent.
+ * short-lived `code`; the handler exchanges it for tokens, persists
+ * them, mints an MCP bearer and redirects to `/install-success`.
  */
-app.get("/oauth/callback", (c) =>
-  c.json(
-    {
-      error: "not_implemented",
-      message: "GET /oauth/callback is not implemented yet.",
-    },
-    501,
-  ),
-);
+app.get("/oauth/callback", callbackHandler);
 
 /**
- * Success page shown to the merchant after install completes. Will be
- * rendered as HTML (with the generated MCP bearer token).
+ * Success page shown to the merchant after install completes. Renders
+ * the freshly issued MCP bearer token (one-time display) and a few
+ * client config snippets.
  */
-app.get("/install-success", (c) =>
-  c.json(
-    {
-      error: "not_implemented",
-      message: "GET /install-success is not implemented yet.",
-    },
-    501,
-  ),
-);
+app.get("/install-success", successHandler);
 
 /**
  * Streamable HTTP MCP transport endpoint. Authenticated via a bearer
  * token tied to a store.
- *
- * Implemented by the MCP agent.
  */
-app.post("/mcp", (c) =>
-  c.json(
-    {
-      error: "not_implemented",
-      message: "POST /mcp is not implemented yet.",
-    },
-    501,
-  ),
-);
+app.post("/mcp", authMcp(), mcpPost);
+app.get("/mcp", authMcp(), mcpGet);
 
 /**
  * Tray webhook receiver. The `:store_id` path param identifies the tenant.
