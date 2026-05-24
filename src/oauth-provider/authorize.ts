@@ -7,13 +7,21 @@
 
 import { eq } from "drizzle-orm";
 import type { Context } from "hono";
+import { deleteCookie, getCookie } from "hono/cookie";
 import { z } from "zod";
 
-import { oauthClients, oauthPending } from "../db/schema.js";
+import { oauthClients, oauthPending, stores } from "../db/schema.js";
 import type { Bindings } from "../index.js";
 import { createDb, type Database } from "../lib/db.js";
 
-import { appendQuery, escapeHtml, stripTrailingSlash } from "./util.js";
+import {
+  appendQuery,
+  escapeHtml,
+  preauthSecret,
+  randomHex,
+  stripTrailingSlash,
+  verifyPreauth,
+} from "./util.js";
 
 /**
  * Validated query params for GET /authorize.
@@ -132,7 +140,46 @@ export function authorizeHandler(
       expiresAt,
     });
 
-    // Fast-path: if the caller pre-selected a store, jump straight to Tray.
+    // Fast-path 1: the merchant just installed via the Tray app store
+    // and we dropped a signed `preauth_store` cookie on /install-success.
+    // If present + valid we already know which store this is — skip the
+    // picker AND the Tray /auth.php redirect (tokens are already in DB),
+    // mint an mcp_code right here, and bounce straight back to the
+    // OAuth client's redirect_uri.
+    const preauthCookie = getCookie(c, "preauth_store");
+    if (preauthCookie) {
+      const verified = await verifyPreauth(
+        preauthCookie,
+        preauthSecret(c.env),
+      );
+      if (verified) {
+        const storeRows = await db
+          .select()
+          .from(stores)
+          .where(eq(stores.id, verified.storeId))
+          .limit(1);
+        const store = storeRows[0];
+        if (store) {
+          const mcpCode = `mcpc_${randomHex(32)}`;
+          await db
+            .update(oauthPending)
+            .set({ mcpCode, storeId: store.id })
+            .where(eq(oauthPending.id, pendingId));
+
+          // One-shot: kill the cookie now so refreshing the redirect
+          // URL or hitting /authorize again can't reuse it.
+          deleteCookie(c, "preauth_store", { path: "/" });
+
+          const redirect = appendQuery(q.redirect_uri, {
+            code: mcpCode,
+            state: q.state,
+          });
+          return c.redirect(redirect, 302);
+        }
+      }
+    }
+
+    // Fast-path 2: if the caller pre-selected a store, jump straight to Tray.
     if (q.store) {
       const storeDomain = normalizeStore(q.store);
       await db

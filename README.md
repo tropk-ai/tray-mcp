@@ -115,27 +115,52 @@ Wrangler prints the public URL (e.g. `https://tray-mcp.<account>.workers.dev`). 
 
 ## Connecting from claude.ai
 
-Two flows are supported:
+Three flows are supported. (A) is the smoothest.
 
-### (A) 1-click OAuth (recommended)
+### (A) Conectar via Loja de Apps Tray (1-click — recommended)
 
-1. In Claude → **Settings → Connectors → Add custom connector**.
-2. Paste just the URL — `https://<your-mcp-host>/mcp` — and leave Auth blank.
-3. Claude discovers the OAuth metadata, registers itself dynamically (RFC 7591), and pops up a Tray authorization screen.
-4. Enter your Tray store domain → confirm permissions → done. No bearer to copy.
+The merchant never types anything:
+
+1. Install the app from the Tray app store (see "Installing on a store").
+2. The success page now shows a large orange **Conectar ao Claude** button.
+   Clicking it opens `https://claude.ai/install-mcp?url=...&name=Tray%20<store>`
+   in a new tab — Claude's "Add connector" sheet appears with the URL
+   already filled in.
+3. Click **Add** in Claude. Claude discovers our OAuth metadata, performs
+   Dynamic Client Registration, and redirects the merchant to our
+   `/authorize`.
+4. Because the success page also dropped a signed `preauth_store` cookie
+   (HMAC, 10 min TTL), `/authorize` recognises the store automatically,
+   **skips both the store-picker and the Tray /auth.php redirect**, mints
+   an `mcp_code`, and bounces straight back to claude.ai.
+5. claude.ai exchanges the code at `/token` — connected. No bearer, no
+   store domain prompt.
 
 Behind the scenes this uses spec MCP 2025-03-26 with OAuth 2.1 + PKCE:
 
 - `GET /.well-known/oauth-protected-resource` (RFC 9728)
 - `GET /.well-known/oauth-authorization-server` (RFC 8414)
 - `POST /register` (RFC 7591 Dynamic Client Registration)
-- `GET /authorize` → store-picker → Tray `/auth.php`
-- `GET /oauth/tray-callback` mints an `mcp_code`, redirects back to claude.ai
+- `GET /authorize` — with `preauth_store` cookie: short-circuit; without
+  it: render a store-picker form
+- `GET /oauth/tray-callback` mints an `mcp_code` (only used by the
+  manual flow), redirects back to claude.ai
 - `POST /token` validates PKCE and issues an MCP bearer
 
-### (B) Bearer token (legacy)
+### (B) Manual via Claude Settings
 
-1. Install the app from the Tray marketplace; copy the bearer token shown on `/install-success`.
+For users who'd rather start from claude.ai instead of the Tray app store:
+
+1. In Claude → **Settings → Connectors → Add custom connector**.
+2. Paste just the URL — `https://<your-mcp-host>/mcp` — and leave Auth blank.
+3. Claude discovers the OAuth metadata, registers itself dynamically (RFC 7591), and pops up our store-picker page.
+4. Enter your Tray store domain → confirm permissions on Tray → done.
+
+### (C) Legacy bearer paste
+
+1. Install the app from the Tray marketplace; expand the "Prefere
+   configurar manualmente?" panel at the bottom of the success page and
+   copy the bearer token shown.
 2. In Claude → **Settings → Connectors → Add custom connector**, fill in:
    - **URL**: `https://<your-mcp-host>/mcp`
    - **Auth**: `Bearer <token-from-install-success>`

@@ -22,6 +22,13 @@ export type Bindings = {
   TRAY_CONSUMER_KEY: string;
   TRAY_CONSUMER_SECRET: string;
   MCP_HOST: string;
+  /**
+   * HMAC secret used to sign the short-lived `preauth_store` cookie that
+   * powers the Tray → Claude 1-click connector flow. Optional: if unset
+   * we fall back to `TRAY_CONSUMER_SECRET`, which is already a Tray-side
+   * shared secret we trust. See `oauth-provider/util.ts#preauthSecret`.
+   */
+  PREAUTH_SECRET?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
