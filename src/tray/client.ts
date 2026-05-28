@@ -81,7 +81,14 @@ export class TrayHttpClient implements TrayClient {
   private readonly backoffMs: readonly number[];
 
   constructor(opts: TrayHttpClientOptions) {
-    this.apiAddress = opts.apiAddress.replace(/\/+$/, '');
+    // Tray's OAuth callback returns `api_address` already ending in `/web_api`
+    // (e.g. `https://loja.commercesuite.com.br/web_api`). buildUrl appends
+    // `/web_api` itself, so we strip a trailing `/web_api` here to avoid a
+    // doubled `/web_api/web_api/...` path. Tray's GET routing tolerates the
+    // doubled segment but PUT/POST/DELETE return 404, which silently broke all
+    // writes. Normalizing both accepted forms (host or host+/web_api) keeps the
+    // base canonical regardless of caller.
+    this.apiAddress = opts.apiAddress.replace(/\/+$/, '').replace(/\/web_api$/i, '');
     this.getAccessToken = opts.getAccessToken;
     this.refreshAccessToken = opts.refreshAccessToken;
     this.rateLimiter = opts.rateLimiter;

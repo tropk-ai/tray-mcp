@@ -17,7 +17,7 @@
  * Não precisa de banco de dados nem deploy — é um teste direto do cliente Tray.
  */
 
-import { createInterface } from "node:readline/promises";
+import { createInterface, type Interface } from "node:readline";
 import { readFileSync } from "node:fs";
 import { stdin as input, stdout as output } from "node:process";
 
@@ -42,6 +42,37 @@ function loadDevVars(): void {
   } catch {
     // .dev.vars ausente — confia no ambiente
   }
+}
+
+/**
+ * Leitor de linhas bufferizado que tolera EOF — funciona tanto interativo (TTY)
+ * quanto com stdin via pipe. O `readline/promises` rejeita `question()` com
+ * "readline was closed" quando o pipe atinge EOF antes da pergunta consumir a
+ * linha bufferizada; aqui guardamos as linhas e devolvemos "" no fim do stream.
+ */
+function createLineReader(rl: Interface): (prompt: string) => Promise<string> {
+  const buffered: string[] = [];
+  const waiters: Array<(line: string) => void> = [];
+  let closed = false;
+
+  rl.on("line", (line) => {
+    const waiter = waiters.shift();
+    if (waiter) waiter(line);
+    else buffered.push(line);
+  });
+  rl.on("close", () => {
+    closed = true;
+    while (waiters.length) waiters.shift()!("");
+  });
+
+  return (prompt: string) =>
+    new Promise<string>((resolve) => {
+      output.write(prompt);
+      const next = buffered.shift();
+      if (next !== undefined) resolve(next);
+      else if (closed) resolve("");
+      else waiters.push(resolve);
+    });
 }
 
 function required(name: string): string {
@@ -81,6 +112,7 @@ async function main(): Promise<void> {
   }
 
   const rl = createInterface({ input, output });
+  const ask = createLineReader(rl);
 
   // Callback pode ser qualquer URL — a Tray só anexa ?code=...&api_address=... a ela.
   // Como não temos servidor rodando, use uma URL que exista (ex.: example.com) e
@@ -99,7 +131,7 @@ async function main(): Promise<void> {
   );
   console.log("Copie a URL COMPLETA da barra de endereços (tem ?code=...&api_address=...).\n");
 
-  const pasted = await rl.question("Cole a URL final do callback aqui: ");
+  const pasted = await ask("Cole a URL final do callback aqui: ");
   const { code, apiAddress } = parseCallbackUrl(pasted);
   console.log(`\n✓ code=${code.slice(0, 8)}…  api_address=${apiAddress}`);
 
@@ -156,7 +188,7 @@ async function main(): Promise<void> {
   }
 
   console.log("\n=== PASSO 4 — Testar accordion SEO (opcional) ===");
-  const catId = await rl.question(
+  const catId = await ask(
     "ID de categoria pra adicionar um FAQ accordion (Enter pra pular): ",
   );
   if (catId.trim()) {

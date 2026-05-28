@@ -47,6 +47,27 @@ describe('TrayHttpClient', () => {
     expect(result).toEqual({ Customers: [{ id: 1 }] });
   });
 
+  it('does not double the /web_api segment when api_address already includes it', async () => {
+    // Tray's OAuth callback returns api_address ending in /web_api. The client
+    // must not append a second /web_api — Tray 404s PUT on the doubled path.
+    let requestedPath: string | undefined;
+    server.use(
+      http.put(`${BASE}/categories/523`, async ({ request }) => {
+        requestedPath = new URL(request.url).pathname;
+        return HttpResponse.json({ message: 'Saved', code: 200, id: '523' });
+      }),
+    );
+
+    const { client } = makeClient({ apiAddress: BASE });
+    const result = await client.request('PUT', '/categories/523', {
+      body: { Category: { description: '<p>x</p>' } },
+    });
+
+    expect(result).toEqual({ message: 'Saved', code: 200, id: '523' });
+    expect(requestedPath).toBe('/web_api/categories/523');
+    expect(requestedPath).not.toContain('/web_api/web_api');
+  });
+
   it('sends POST with JSON body and Content-Type header', async () => {
     let observed: { contentType: string | null; body: unknown; tokenParam: string | null } | undefined;
 
