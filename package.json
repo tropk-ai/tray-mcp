@@ -15,6 +15,7 @@
     "test": "vitest",
     "gen-tools": "tsx scripts/gen-tools.ts",
     "smoke": "tsx scripts/smoke.ts",
+    "test:real": "tsx scripts/test-real-store.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
