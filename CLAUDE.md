@@ -152,8 +152,8 @@ Já entregues pelo time da Tray. Estão (ou devem estar) num `.dev.vars` local q
 TRAY_TEST_STORE=https://lojatesteintegracaotray.commercesuite.com.br
 
 # Chaves do app "MCP Tray para Claude - Emporio Sem Alcool"
-TRAY_CONSUMER_KEY=***REMOVED***
-TRAY_CONSUMER_SECRET=***REMOVED***
+TRAY_CONSUMER_KEY=<consumer_key — ver .dev.vars local, NÃO commitar>
+TRAY_CONSUMER_SECRET=<consumer_secret — ver .dev.vars local, NÃO commitar>
 
 # Pra rodar o servidor completo:
 MCP_HOST=http://localhost:8787   # ou a URL HTTPS do túnel
