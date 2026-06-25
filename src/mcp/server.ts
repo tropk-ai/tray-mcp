@@ -13,6 +13,7 @@ import { z, ZodError } from "zod";
 
 import type { TrayClient } from "../tray/client.js";
 import { allTools } from "../tools/index.js";
+import { applyCorrections } from "../tools/corrections.js";
 
 export interface McpServerContext {
   client: TrayClient;
@@ -33,11 +34,14 @@ type ToolEntry = {
   ) => Promise<unknown>;
 };
 
+// Apply hand-written route corrections (see tools/corrections.ts) over the
+// codegen output: drops non-existent routes and fixes wrong paths/bodies.
+const effectiveTools = applyCorrections(
+  allTools as readonly ToolEntry[],
+) as readonly ToolEntry[];
+
 const TOOL_INDEX: Map<string, ToolEntry> = new Map(
-  (allTools as readonly ToolEntry[]).map((tool) => [
-    tool.definition.name,
-    tool,
-  ]),
+  effectiveTools.map((tool) => [tool.definition.name, tool]),
 );
 
 function listToolDescriptors(): Array<{
@@ -45,7 +49,7 @@ function listToolDescriptors(): Array<{
   description: string;
   inputSchema: ReturnType<typeof zodToJsonSchema>;
 }> {
-  return (allTools as readonly ToolEntry[]).map((tool) => ({
+  return effectiveTools.map((tool) => ({
     name: tool.definition.name,
     description: tool.definition.description,
     inputSchema: zodToJsonSchema(tool.definition.inputSchema, {
