@@ -38,6 +38,8 @@ describe("route corrections", () => {
       ["tray_notas_fiscais_update", { order_id: 1, invoice_id: 73, body: {} }, "PUT", "/orders/1/invoices/73"],
       ["tray_variacoes_get", { id: 3705 }, "GET", "/products/variants/3705"],
       ["tray_kits_get", { id: 9 }, "GET", "/products/kits"],
+      ["tray_imagens_produtos_create_images", { id: 4, body: {} }, "POST", "/products/4/images"],
+      ["tray_imagens_produtos_create_images_images", { product_id: 4, variant_id: 3705, body: {} }, "POST", "/products/4/images"],
     ];
 
     for (const [name, input, method, path] of cases) {

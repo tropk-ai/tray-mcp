@@ -209,14 +209,31 @@ export const correctedTools: ToolEntry[] = [
       ),
   },
 
-  // ---- Imagem de variação (usa /products/:product_id/images) ------------
+  // ---- Imagem de produto (payload documentado: Images/picture_source_x) --
+  {
+    definition: {
+      name: "tray_imagens_produtos_create_images",
+      description:
+        'Enviar imagem de produto (POST /products/:id/images). body = picture_source_1..N, ex.: {"picture_source_1":"https://.../img1.jpg","picture_source_2":"https://.../img2.jpg"}',
+      inputSchema: z.object({ id, body, access_token: accessToken }),
+    },
+    execute: (input, ctx) =>
+      ctx.client.request(
+        "POST",
+        `/products/${encodeURIComponent(String(input.id))}/images`,
+        { body: { Images: input.body }, accessToken: input.access_token },
+      ),
+  },
+
+  // ---- Imagem de variação (mesma rota do produto + variant_id) ----------
   {
     definition: {
       name: "tray_imagens_produtos_create_images_images",
       description:
-        "Enviar imagem de variação (POST /products/:product_id/images). body inclui http e variant_id.",
+        'Enviar imagem de variação (POST /products/:product_id/images). body = picture_source_1..N; variant_id informado à parte.',
       inputSchema: z.object({
         product_id: id,
+        variant_id: id,
         body,
         access_token: accessToken,
       }),
@@ -225,7 +242,10 @@ export const correctedTools: ToolEntry[] = [
       ctx.client.request(
         "POST",
         `/products/${encodeURIComponent(String(input.product_id))}/images`,
-        { body: { ProductImage: input.body }, accessToken: input.access_token },
+        {
+          body: { Images: input.body, variant_id: input.variant_id },
+          accessToken: input.access_token,
+        },
       ),
   },
 

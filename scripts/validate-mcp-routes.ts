@@ -128,11 +128,11 @@ async function main() {
   // ---- Imagem produto + variação -------------------------------------
   console.log("# Imagem (produto e variação)");
   await step("imagem produto", async () => {
-    const r: any = await call("tray_imagens_produtos_create_images", { id: 4, body: { http: "https://picsum.photos/id/237/300/300.jpg" } });
+    const r: any = await call("tray_imagens_produtos_create_images", { id: 4, body: { picture_source_1: "https://picsum.photos/id/237/300/300.jpg" } });
     if (r?.code && r.code >= 400) throw new Error(JSON.stringify(r));
   });
   await step("imagem variação", async () => {
-    const r: any = await call("tray_imagens_produtos_create_images_images", { product_id: 4, body: { http: "https://picsum.photos/id/238/300/300.jpg", variant_id: "3705" } });
+    const r: any = await call("tray_imagens_produtos_create_images_images", { product_id: 4, variant_id: "3705", body: { picture_source_1: "https://picsum.photos/id/238/300/300.jpg" } });
     if (r?.code && r.code >= 400) throw new Error(JSON.stringify(r));
   });
 
