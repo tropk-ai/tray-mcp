@@ -8,13 +8,12 @@ compatibility_flags = ["nodejs_compat"]
 enabled = true
 
 # Public environment variables.
-# Secrets (DATABASE_URL, TRAY_CONSUMER_SECRET) should be uploaded with
-# `wrangler secret put <NAME>` and not committed here.
+# Secrets (DATABASE_URL, TRAY_CONSUMER_KEY, TRAY_CONSUMER_SECRET,
+# PREAUTH_SECRET) are uploaded with `wrangler secret put <NAME>` and are
+# NOT listed here. MCP_HOST is public and is updated to the real
+# workers.dev URL after the first deploy.
 [vars]
-DATABASE_URL = ""
-TRAY_CONSUMER_KEY = ""
-TRAY_CONSUMER_SECRET = ""
-MCP_HOST = "https://tray-mcp.workers.dev"
+MCP_HOST = "https://tray-mcp.gardelin.workers.dev"
 
 # Example of a production environment override.
 # [env.production.vars]

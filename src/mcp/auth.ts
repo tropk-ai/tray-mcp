@@ -221,7 +221,9 @@ export function authMcp(deps: AuthDeps = {}): MiddlewareHandler<{
 
     const client = deps.createClient
       ? deps.createClient({
-          storeId: store.trayStoreId,
+          // The client keys token refresh (oauth_tokens.store_id) on the
+          // internal UUID, not the Tray store id.
+          storeId: store.id,
           apiAddress: store.apiAddress,
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
@@ -229,7 +231,9 @@ export function authMcp(deps: AuthDeps = {}): MiddlewareHandler<{
           env: c.env,
         })
       : defaultCreateClient({
-          storeId: store.trayStoreId,
+          // The client keys token refresh (oauth_tokens.store_id) on the
+          // internal UUID, not the Tray store id.
+          storeId: store.id,
           apiAddress: store.apiAddress,
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,

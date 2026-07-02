@@ -254,6 +254,7 @@ describe("authMcp middleware", () => {
     const token = "secret-token";
     const hash = await sha256Hex(token);
     const fakeClient: TrayClient = { request: vi.fn(async () => ({})) };
+    const createClient = vi.fn(() => fakeClient);
     const app = buildApp({
       getDb: () =>
         makeMockDb({
@@ -274,7 +275,7 @@ describe("authMcp middleware", () => {
             { storeId: STORE_UUID, accessToken: "AT", refreshToken: "RT" },
           ],
         }),
-      createClient: () => fakeClient,
+      createClient,
     });
     const res = await app.request(
       "/mcp",
@@ -284,5 +285,12 @@ describe("authMcp middleware", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { storeId: string };
     expect(body.storeId).toBe(TRAY_STORE_ID);
+
+    // Regression: the TrayClient must be keyed on the internal UUID (used
+    // for oauth_tokens.store_id during refresh), NOT the Tray store id —
+    // otherwise token refresh throws "invalid input syntax for type uuid".
+    expect(createClient).toHaveBeenCalledWith(
+      expect.objectContaining({ storeId: STORE_UUID }),
+    );
   });
 });
