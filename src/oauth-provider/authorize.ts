@@ -65,9 +65,12 @@ export function buildTrayAuthorizeUrl(params: {
   mcpHost: string;
   pendingId: string;
 }): string {
+  // `pending` goes in the PATH, not the query string: Tray appends its own
+  // `?code=...&api_address=...` to the callback, and it mangles/drops the
+  // result if the callback already carries a `?query` of its own.
   const callback =
-    `${stripTrailingSlash(params.mcpHost)}/oauth/tray-callback` +
-    `?pending=${encodeURIComponent(params.pendingId)}`;
+    `${stripTrailingSlash(params.mcpHost)}/oauth/tray-callback/` +
+    encodeURIComponent(params.pendingId);
   return (
     `https://${params.storeDomain}/auth.php?response_type=code` +
     `&consumer_key=${encodeURIComponent(params.consumerKey)}` +

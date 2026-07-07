@@ -579,7 +579,7 @@ describe("end-to-end OAuth provider flow", () => {
     );
     // Inject a mock install function so we don't hit Tray.
     app.get(
-      "/oauth/tray-callback",
+      "/oauth/tray-callback/:pending",
       trayCallbackHandler({
         getDb: () => db,
         installFn: async (p) => {
@@ -627,17 +627,20 @@ describe("end-to-end OAuth provider flow", () => {
     );
     expect(authRes.status).toBe(302);
     const trayLoc = authRes.headers.get("Location")!;
-    // Extract our pending id from the callback URL Tray will hit.
-    const pendingMatch = /pending=([^&]+)/.exec(decodeURIComponent(trayLoc));
+    // Extract our pending id from the callback URL Tray will hit. It now
+    // lives in the PATH (/oauth/tray-callback/<id>), not the query string.
+    const pendingMatch = /\/oauth\/tray-callback\/([^&?]+)/.exec(
+      decodeURIComponent(trayLoc),
+    );
     const pendingId = pendingMatch![1]!;
 
-    // 3. simulate Tray redirecting back
+    // 3. simulate Tray redirecting back — code + api_address in the query,
+    //    pending in the path.
     const cbRes = await app.request(
-      "/oauth/tray-callback?" +
+      `/oauth/tray-callback/${pendingId}?` +
         new URLSearchParams({
           code: "tray-code",
           api_address: "https://api.tray.com",
-          pending: pendingId,
         }).toString(),
       {},
       env,

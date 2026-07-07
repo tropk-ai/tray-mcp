@@ -112,7 +112,7 @@ app.post("/authorize/store-selected", storeSelectedHandler());
  * authorizes the app. We exchange the Tray code for tokens, mint an
  * `mcp_code`, and redirect back to the OAuth client's redirect_uri.
  */
-app.get("/oauth/tray-callback", trayCallbackHandler());
+app.get("/oauth/tray-callback/:pending", trayCallbackHandler());
 
 /**
  * POST /token — final step. Validates PKCE on `authorization_code`
